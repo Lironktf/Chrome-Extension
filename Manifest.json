@@ -19,8 +19,7 @@
         "assets/play.png",
         "assets/delete.png",
         "assets/save.png"
-      ],
-      "matches": ["https://*.youtube.com/*"]
+      ]
     }
   ],
   "action": {
@@ -29,8 +28,8 @@
       "24": "assets/ext-icon.png",
       "32": "assets/ext-icon.png"
     },
-    "default_title": "My YT Bookmarks",
-    "default_popup": "popup.html"
+    "default_title": "Chrome Bookmarks",
+    "default_popup": "UI.html"
   },
   "manifest_version": 3
 }

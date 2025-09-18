@@ -2,12 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <meta name="viewport" content="width=420, initial-scale=1.0, user-scalable=no">
+  <title>Page Position Bookmarks</title>
   <link rel="stylesheet" href="./style.css">
 </head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-content">
+        <div class="icon-wrapper">
+          <svg class="main-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <div class="header-text">
+          <h1>Page Bookmarks</h1>
+          <p class="subtitle">Save and jump to specific positions</p>
+        </div>
+      </div>
+    </div>
 
+    <div class="bookmark-form">
+      <div class="form-group">
+        <label for="bookmarkName">Bookmark Name</label>
+        <div class="input-wrapper">
+          <input type="text" id="bookmarkName" placeholder="Enter bookmark name..." maxlength="50">
+          <div class="input-border"></div>
+        </div>
+      </div>
+      <button id="saveBookmarkBtn" class="btn btn-primary">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17,21 17,13 7,13 7,21"/>
+          <polyline points="7,3 7,8 15,8"/>
+        </svg>
+        <span>Save Current Position</span>
+      </button>
+    </div>
 
+    <div class="bookmarks-section">
+      <div class="section-header">
+        <h3>Saved Bookmarks</h3>
+        <div class="bookmark-count" id="bookmarkCount">0</div>
+      </div>
+      <div id="bookmarksList" class="bookmarks-list">
+        <div class="no-bookmarks">
+          <div class="no-bookmarks-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <p>No bookmarks saved yet</p>
+          <p class="hint">Scroll to a position and save it as a bookmark</p>
+        </div>
+      </div>
+    </div>
 
+    <div class="footer">
+      <div class="help-text">
+        <svg class="help-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span>Scroll to any position and save it for quick access</span>
+      </div>
+    </div>
+  </div>
 
+  <script src="popup.js"></script>
+</body>
 </html>

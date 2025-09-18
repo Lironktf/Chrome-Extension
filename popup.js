@@ -3,6 +3,100 @@
 let currentTab = null;
 let bookmarks = [];
 
+// Define functions first before they're used
+function jumpToBookmark(bookmarkId) {
+  console.log('=== JUMP FUNCTION CALLED ===');
+  console.log('Jumping to bookmark:', bookmarkId);
+  console.log('Available bookmarks:', bookmarks);
+  console.log('Current tab:', currentTab);
+  
+  const bookmark = bookmarks.find(b => b.id === bookmarkId);
+  if (!bookmark) {
+    console.error('Bookmark not found:', bookmarkId);
+    showError('Bookmark not found');
+    return;
+  }
+
+  console.log('Found bookmark:', bookmark);
+
+  // Try injection first, then fallback to content script
+  scrollToPositionViaInjection(currentTab.id, bookmark.scrollPosition)
+    .then(() => {
+      console.log('Scroll injection successful');
+      showSuccess(`Jumped to "${bookmark.name}"`);
+      setTimeout(() => window.close(), 1000);
+    })
+    .catch((injectionError) => {
+      console.warn('Injection failed, trying content script:', injectionError);
+      chrome.tabs.sendMessage(currentTab.id, {
+        action: 'scrollToPosition',
+        scrollPosition: bookmark.scrollPosition
+      })
+      .then(() => {
+        console.log('Content script scroll successful');
+        showSuccess(`Jumped to "${bookmark.name}"`);
+        setTimeout(() => window.close(), 1000);
+      })
+      .catch((contentError) => {
+        console.error('Both injection and content script failed:', contentError);
+        showError('Failed to jump to bookmark');
+      });
+    });
+}
+
+function deleteBookmark(bookmarkId) {
+  console.log('=== DELETE FUNCTION CALLED ===');
+  console.log('Deleting bookmark:', bookmarkId);
+  console.log('Available bookmarks:', bookmarks);
+  
+  if (!confirm('Are you sure you want to delete this bookmark?')) {
+    console.log('Delete cancelled by user');
+    return;
+  }
+
+  chrome.runtime.sendMessage({
+    action: 'deleteBookmark',
+    bookmarkId: bookmarkId,
+    url: currentTab?.url
+  })
+  .then((response) => {
+    console.log('Delete response:', response);
+    loadBookmarks().then(() => {
+      showSuccess('Bookmark deleted successfully!');
+    });
+  })
+  .catch((error) => {
+    console.error('Error deleting bookmark:', error);
+    showError('Failed to delete bookmark');
+  });
+}
+
+// Make functions globally available
+window.jumpToBookmark = jumpToBookmark;
+window.deleteBookmark = deleteBookmark;
+
+// Add console testing functions
+window.testScroll = function(position) {
+  console.log('Testing scroll to position:', position);
+  scrollToPositionViaInjection(currentTab.id, position)
+    .then(() => console.log('Scroll test successful'))
+    .catch(err => console.error('Scroll test failed:', err));
+};
+
+// Direct scroll function for console testing
+window.scrollToPosition = function(position) {
+  console.log('Direct scroll to position:', position);
+  chrome.scripting.executeScript({
+    target: { tabId: currentTab.id },
+    func: (pos) => {
+      window.scrollTo({ top: pos, behavior: 'smooth' });
+      console.log('Scrolled to:', pos);
+    },
+    args: [position]
+  }).then(() => console.log('Direct scroll successful'))
+    .catch(err => console.error('Direct scroll failed:', err));
+};
+
 // Initialize popup when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
   await initializePopup();
@@ -54,6 +148,23 @@ function setupEventListeners() {
       saveCurrentPosition();
     }
   });
+
+  // Add event delegation for bookmark buttons
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.btn-jump')) {
+      const button = e.target.closest('.btn-jump');
+      const bookmarkId = button.getAttribute('data-bookmark-id');
+      console.log('Jump button clicked for:', bookmarkId);
+      jumpToBookmark(bookmarkId);
+    }
+    
+    if (e.target.closest('.btn-delete')) {
+      const button = e.target.closest('.btn-delete');
+      const bookmarkId = button.getAttribute('data-bookmark-id');
+      console.log('Delete button clicked for:', bookmarkId);
+      deleteBookmark(bookmarkId);
+    }
+  });
 }
 
 // Get current scroll position from content script
@@ -85,7 +196,7 @@ function updateScrollPositionDisplay(scrollPosition) {
       <polyline points="17,21 17,13 7,13 7,21"/>
       <polyline points="7,3 7,8 15,8"/>
     </svg>
-    <span>Save Position (${Math.round(scrollPosition)}px)</span>
+    <span>Save Current Position</span>
   `;
 }
 
@@ -189,12 +300,12 @@ function renderBookmarks() {
         <div class="bookmark-time">${formatDate(bookmark.timestamp)}</div>
       </div>
       <div class="bookmark-actions">
-        <button class="btn btn-small btn-jump" onclick="jumpToBookmark('${bookmark.id}')" title="Jump to this position">
+        <button class="btn btn-small btn-jump" data-bookmark-id="${bookmark.id}" title="Jump to this position">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="5,3 19,12 5,21"/>
           </svg>
         </button>
-        <button class="btn btn-small btn-delete" onclick="deleteBookmark('${bookmark.id}')" title="Delete bookmark">
+        <button class="btn btn-small btn-delete" data-bookmark-id="${bookmark.id}" title="Delete bookmark">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3,6 5,6 21,6"/>
             <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
@@ -205,49 +316,6 @@ function renderBookmarks() {
   `).join('');
 }
 
-// Jump to a specific bookmark
-async function jumpToBookmark(bookmarkId) {
-  try {
-    const bookmark = bookmarks.find(b => b.id === bookmarkId);
-    if (!bookmark) {
-      showError('Bookmark not found');
-      return;
-    }
-
-    // Scroll to position using injection (more reliable)
-    await scrollToPositionViaInjection(currentTab.id, bookmark.scrollPosition);
-
-    // Close popup
-    window.close();
-    
-  } catch (error) {
-    console.error('Error jumping to bookmark:', error);
-    showError('Failed to jump to bookmark');
-  }
-}
-
-// Delete a bookmark
-async function deleteBookmark(bookmarkId) {
-  try {
-    if (!confirm('Are you sure you want to delete this bookmark?')) {
-      return;
-    }
-
-    await chrome.runtime.sendMessage({
-      action: 'deleteBookmark',
-      bookmarkId: bookmarkId,
-      url: currentTab?.url
-    });
-
-    // Reload bookmarks
-    await loadBookmarks();
-    showSuccess('Bookmark deleted successfully!');
-    
-  } catch (error) {
-    console.error('Error deleting bookmark:', error);
-    showError('Failed to delete bookmark');
-  }
-}
 
 // Utility functions
 function escapeHtml(text) {
@@ -301,9 +369,6 @@ function showNotification(message, type = 'info') {
   }, 3000);
 }
 
-// Make functions globally available for onclick handlers
-window.jumpToBookmark = jumpToBookmark;
-window.deleteBookmark = deleteBookmark;
 
 // Get scroll position by injecting a script (most reliable method)
 async function getScrollViaInjection(tabId) {
@@ -332,19 +397,37 @@ async function getScrollViaInjection(tabId) {
 // Scroll to position using injection
 async function scrollToPositionViaInjection(tabId, scrollPosition) {
   try {
+    console.log('Attempting to scroll to position:', scrollPosition);
+    
     await chrome.scripting.executeScript({
       target: { tabId },
       func: (pos) => {
-        window.scrollTo({
-          top: pos,
-          behavior: 'smooth'
-        });
-        console.log('Scrolled to position:', pos);
+        console.log('Injected script received position:', pos);
+        
+        // Try multiple scroll methods for better compatibility
+        if (window.scrollTo) {
+          window.scrollTo({
+            top: pos,
+            behavior: 'smooth'
+          });
+        } else if (document.documentElement.scrollTop !== undefined) {
+          document.documentElement.scrollTop = pos;
+        } else if (document.body.scrollTop !== undefined) {
+          document.body.scrollTop = pos;
+        }
+        
+        // Verify the scroll worked
+        setTimeout(() => {
+          const currentPos = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+          console.log('Current scroll position after jump:', currentPos);
+        }, 500);
       },
       args: [scrollPosition]
     });
+    
+    console.log('Scroll command executed successfully');
   } catch (e) {
-    console.warn('Scroll injection failed:', e);
+    console.error('Scroll injection failed:', e);
     throw e;
   }
 }

@@ -1,0 +1,18 @@
+# Chrome Extension Development Files
+*.pem
+*.crx
+*.zip
+
+# Node modules (if you add any build tools)
+node_modules/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

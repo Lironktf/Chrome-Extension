@@ -1,5 +1,4 @@
 // Popup script for Page Position Bookmarks extension
-
 let currentTab = null;
 let bookmarks = [];
 
@@ -24,7 +23,6 @@ function jumpToBookmark(bookmarkId) {
     .then(() => {
       console.log('Scroll injection successful');
       showSuccess(`Jumped to "${bookmark.name}"`);
-      setTimeout(() => window.close(), 1000);
     })
     .catch((injectionError) => {
       console.warn('Injection failed, trying content script:', injectionError);
@@ -35,7 +33,6 @@ function jumpToBookmark(bookmarkId) {
       .then(() => {
         console.log('Content script scroll successful');
         showSuccess(`Jumped to "${bookmark.name}"`);
-        setTimeout(() => window.close(), 1000);
       })
       .catch((contentError) => {
         console.error('Both injection and content script failed:', contentError);
@@ -48,11 +45,6 @@ function deleteBookmark(bookmarkId) {
   console.log('=== DELETE FUNCTION CALLED ===');
   console.log('Deleting bookmark:', bookmarkId);
   console.log('Available bookmarks:', bookmarks);
-  
-  if (!confirm('Are you sure you want to delete this bookmark?')) {
-    console.log('Delete cancelled by user');
-    return;
-  }
 
   chrome.runtime.sendMessage({
     action: 'deleteBookmark',
@@ -116,6 +108,16 @@ async function initializePopup() {
     }
 
     console.log('Current tab:', currentTab.url);
+
+    // Check if we're on a restricted page
+    if (currentTab.url.startsWith('chrome://') || 
+        currentTab.url.startsWith('chrome-extension://') ||
+        currentTab.url.startsWith('moz-extension://') ||
+        currentTab.url.startsWith('edge://') ||
+        currentTab.url.startsWith('about:')) {
+      showError('This extension cannot be used on browser internal pages. Please navigate to a regular website.');
+      return;
+    }
 
     // Load bookmarks for current page
     await loadBookmarks();
@@ -289,8 +291,8 @@ function renderBookmarks() {
     return;
   }
 
-  // Sort bookmarks by scroll position
-  const sortedBookmarks = [...bookmarks].sort((a, b) => a.scrollPosition - b.scrollPosition);
+  // Sort bookmarks by creation time (newest first)
+  const sortedBookmarks = [...bookmarks].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   bookmarksList.innerHTML = sortedBookmarks.map(bookmark => `
     <div class="bookmark-item" data-id="${bookmark.id}">
@@ -390,6 +392,11 @@ async function getScrollViaInjection(tabId) {
     return position;
   } catch (e) {
     console.warn('Script injection failed:', e);
+    // If it's a restricted page error, return 0 silently
+    if (e.message && e.message.includes('Cannot access a chrome:// URL')) {
+      console.log('Cannot access restricted page, using position 0');
+      return 0;
+    }
     return 0;
   }
 }
@@ -428,6 +435,10 @@ async function scrollToPositionViaInjection(tabId, scrollPosition) {
     console.log('Scroll command executed successfully');
   } catch (e) {
     console.error('Scroll injection failed:', e);
+    // If it's a restricted page error, throw a more specific error
+    if (e.message && e.message.includes('Cannot access a chrome:// URL')) {
+      throw new Error('Cannot scroll on restricted pages like chrome:// URLs');
+    }
     throw e;
   }
 }

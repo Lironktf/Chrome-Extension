@@ -1,5 +1,8 @@
 # Page Position Bookmarks - Chrome Extension
 
+Now live on chrome web store!
+Link: https://chromewebstore.google.com/detail/kehmbjnegoffdmfolfdchhjoppdgomde?utm_source=item-share-cb
+
 A Chrome web extension that allows you to save and jump to specific scroll positions on any webpage. Perfect for long documents, PDFs, articles, or any page where you want to quickly return to specific sections.
 
 ## Features

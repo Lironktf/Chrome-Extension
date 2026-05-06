@@ -259,8 +259,9 @@ body {
 
 .bookmark-info {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   flex: 1;
   min-width: 0;
 }
@@ -282,6 +283,11 @@ body {
   font-weight: 400;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.bookmark-time {
+  font-size: 11px;
+  color: #999;
 }
 
 .bookmark-actions {
@@ -363,6 +369,34 @@ input:focus {
 
 .bookmark-item {
   animation: fadeInUp 0.2s ease-out;
+}
+
+.notification {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+}
+
+.notification-info {
+  background: #eceff1;
+  color: #37474f;
+}
+
+.notification-success {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.notification-error {
+  background: #ffebee;
+  color: #b71c1c;
 }
 
 /* Improved typography */
